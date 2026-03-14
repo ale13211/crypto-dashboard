@@ -37,3 +37,14 @@ container.appendChild(card)
 }
 
 loadCrypto()
+document.getElementById("search").addEventListener("input", function(){
+
+const value = this.value.toLowerCase()
+
+const filtered = coins.filter(c =>
+c.name.toLowerCase().includes(value)
+)
+
+displayCoins(filtered)
+
+})
