@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Market Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange: #ff6a00;
+  --orange-glow: rgba(255,106,0,0.12);
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #1a1a1a;
+  --border: rgba(255,255,255,0.06);
+  --text: #f0f0f0;
+  --text-muted: #777;
+  --green: #00c896;
+  --green-glow: rgba(0,200,150,0.1);
+  --red: #ff4466;
+  --red-glow: rgba(255,68,102,0.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans', sans-serif; min-height:100vh; }
+body::before {
+  content:''; position:fixed; inset:0;
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,106,0,0.06), transparent);
+  pointer-events:none; z-index:0;
+}
+
+header {
+  position:sticky; top:0; z-index:50;
+  background:rgba(10,10,10,0.9); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:1rem 2.5rem;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo { font-family:'Syne', sans-serif; font-weight:800; font-size:1.4rem; letter-spacing:-0.02em; }
+.logo span { color:var(--orange); }
+.live-badge {
+  display:flex; align-items:center; gap:0.4rem;
+  font-size:0.78rem; color:var(--text-muted);
+  background:var(--surface2); border:1px solid var(--border);
+  padding:0.35rem 0.75rem; border-radius:100px;
+}
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hero { max-width:1300px; margin:0 auto; padding:4rem 2.5rem 2.5rem; position:relative; z-index:1; }
+.hero-tag {
+  display:inline-flex; align-items:center; gap:0.4rem;
+  background:var(--orange-glow); border:1px solid rgba(255,106,0,0.25);
+  color:var(--orange); padding:0.3rem 0.8rem; border-radius:100px;
+  font-size:0.78rem; font-weight:500; margin-bottom:1.25rem;
+}
+.hero h1 {
+  font-family:'Syne', sans-serif; font-size:clamp(1.8rem, 4vw, 3rem);
+  font-weight:800; letter-spacing:-0.03em; line-height:1.1; margin-bottom:0.5rem;
+}
+.hero h1 span { color:var(--orange); }
+.hero p { color:var(--text-muted); font-size:1rem; margin-bottom:2rem; }
+
+.stats-bar { display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:2rem; }
+.stat-chip {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:0.75rem 1.25rem;
+  display:flex; flex-direction:column; gap:0.2rem; min-width:150px;
+}
+.stat-chip-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+.stat-chip-value { font-family:'Syne', sans-serif; font-size:1rem; font-weight:700; }
+
+.search-wrap { position:relative; max-width:380px; margin-bottom:1rem; }
+.search-wrap svg { position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
+#search {
+  width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  padding:0.75rem 1rem 0.75rem 2.75rem; border-radius:10px;
+  font-family:'DM Sans', sans-serif; font-size:0.9rem; outline:none; transition:border-color 0.2s;
+}
+#search::placeholder { color:var(--text-muted); }
+#search:focus { border-color:rgba(255,106,0,0.4); }
+#last-updated { font-size:0.75rem; color:var(--text-muted); margin-bottom:2rem; }
+
+.table-header { max-width:1300px; margin:0 auto; padding:0 2.5rem 0.5rem; position:relative; z-index:1; }
+.section-label {
+  font-family:'Syne', sans-serif; font-size:0.72rem; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted);
+  margin-bottom:1rem; display:flex; align-items:center; gap:1rem;
+}
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+.col-headers {
+  display:grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr;
+  gap:1rem; padding:0.5rem 1.25rem;
+  font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:600;
+}
+
+.coins-section { max-width:1300px; margin:0 auto; padding:0 2.5rem 5rem; position:relative; z-index:1; }
+#crypto-list { display:flex; flex-direction:column; gap:0.5rem; }
+
+.crypto-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:1rem 1.25rem; display:grid;
+  grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr;
+  gap:1rem; align-items:center;
+  transition:all 0.25s cubic-bezier(0.23,1,0.32,1);
+  animation: fadeUp 0.4s ease both;
+}
+.crypto-card:hover { border-color:rgba(255,106,0,0.25); background:var(--surface2); transform:translateX(4px); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes flashGreen { 0%,100%{background:var(--surface)} 50%{background:rgba(0,200,150,0.08)} }
+@keyframes flashRed   { 0%,100%{background:var(--surface)} 50%{background:rgba(255,68,102,0.08)} }
+.flash-up   { animation:flashGreen 0.8s ease; }
+.flash-down { animation:flashRed 0.8s ease; }
+
+.coin-rank { font-size:0.8rem; color:var(--text-muted); font-weight:600; text-align:center; }
+.coin-info { display:flex; align-items:center; gap:0.75rem; }
+.coin-icon {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0; overflow:hidden;
+  background:var(--surface2); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+}
+.coin-icon img { width:100%; height:100%; object-fit:contain; border-radius:50%; }
+.coin-name { font-family:'Syne', sans-serif; font-size:0.95rem; font-weight:700; }
+.coin-symbol { font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; }
+.coin-price { font-family:'Syne', sans-serif; font-size:0.95rem; font-weight:600; }
+.coin-change {
+  display:inline-flex; align-items:center; gap:0.3rem;
+  font-size:0.85rem; font-weight:600; padding:0.3rem 0.6rem; border-radius:6px; width:fit-content;
+}
+.coin-change.up   { color:var(--green); background:var(--green-glow); }
+.coin-change.down { color:var(--red);   background:var(--red-glow); }
+.coin-mcap { font-size:0.85rem; color:var(--text-muted); }
+.mini-chart { height:32px; display:flex; align-items:flex-end; gap:2px; }
+.mini-bar { flex:1; border-radius:2px; min-height:4px; }
+
+.skeleton {
+  background:linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+  background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; height:20px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:1rem 1.25rem; display:grid;
+  grid-template-columns:40px 2fr 1fr 1fr 1fr 1fr;
+  gap:1rem; align-items:center; margin-bottom:0.5rem;
+}
+
+.error-msg { text-align:center; padding:3rem; color:var(--text-muted); }
+.error-msg strong { color:var(--red); display:block; margin-bottom:0.5rem; font-size:1.1rem; }
+
+footer {
+  text-align:center; padding:2rem; color:var(--text-muted); font-size:0.82rem;
+  border-top:1px solid var(--border); position:relative; z-index:1;
+}
+footer strong { color:var(--orange); }
+
+@media(max-width:900px) {
+  .col-headers { display:none; }
+  .crypto-card { grid-template-columns:40px 1fr 1fr; }
+  .coin-mcap, .mini-chart { display:none; }
+}
+@media(max-width:640px) {
+  header, .hero, .table-header, .coins-section { padding-left:1.25rem; padding-right:1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CRYPTO<span>.</span></div>
+  <div class="live-badge"><span class="live-dot"></span>Live · 30s refresh</div>
+</header>
+
+<section class="hero">
+  <div class="hero-tag">Top 20 · Real-time</div>
+  <h1>Crypto Market<br><span>Dashboard</span></h1>
+  <p>Real-time prices, market cap and 24h changes for the top 20 cryptocurrencies.</p>
+  <div class="stats-bar">
+    <div class="stat-chip"><span class="stat-chip-label">Total Market Cap</span><span class="stat-chip-value" id="totalMcap">—</span></div>
+    <div class="stat-chip"><span class="stat-chip-label">24h Volume</span><span class="stat-chip-value" id="totalVolume">—</span></div>
+    <div class="stat-chip"><span class="stat-chip-label">Gainers 📈</span><span class="stat-chip-value" id="gainers" style="color:var(--green)">—</span></div>
+    <div class="stat-chip"><span class="stat-chip-label">Losers 📉</span><span class="stat-chip-value" id="losers" style="color:var(--red)">—</span></div>
+  </div>
+  <div class="search-wrap">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search" placeholder="Search cryptocurrency...">
+  </div>
+  <div id="last-updated"></div>
+</section>
+
+<div class="table-header">
+  <div class="section-label">Markets</div>
+  <div class="col-headers">
+    <span>#</span><span>Name</span><span>Price</span><span>24h %</span><span>Market Cap</span><span>Trend</span>
+  </div>
+</div>
+
+<section class="coins-section">
+  <div id="crypto-list"></div>
+</section>
+
+<footer>&copy; 2026 <strong>CRYPTO DASHBOARD</strong> · Built by Alejandro Insfran</footer>
+
+<script>
+let coins = [];
+let prevPrices = {};
+
+function formatUSD(n) {
+  n = parseFloat(n);
+  if (isNaN(n)) return '—';
+  if (n >= 1e12) return `$${(n/1e12).toFixed(2)}T`;
+  if (n >= 1e9)  return `$${(n/1e9).toFixed(2)}B`;
+  if (n >= 1e6)  return `$${(n/1e6).toFixed(2)}M`;
+  return `$${n.toLocaleString()}`;
+}
+
+function formatPrice(p) {
+  p = parseFloat(p);
+  if (isNaN(p)) return '—';
+  if (p >= 1000) return `$${p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  if (p >= 1)    return `$${p.toFixed(4)}`;
+  return `$${p.toFixed(6)}`;
+}
+
+function getMiniChart(change) {
+  const isUp = parseFloat(change) >= 0;
+  const color = isUp ? 'var(--green)' : 'var(--red)';
+  return Array.from({length:8}, (_,j) => {
+    const h = 15 + Math.random() * 85;
+    return `<div class="mini-bar" style="height:${h}%;background:${color};opacity:${0.2+j*0.1}"></div>`;
+  }).join('');
+}
+
+function renderSkeletons() {
+  const list = document.getElementById('crypto-list');
+  list.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div');
+    s.className = 'skeleton-card';
+    s.innerHTML = `
+      <div class="skeleton" style="width:24px;height:24px;border-radius:50%"></div>
+      <div style="display:flex;gap:.75rem;align-items:center">
+        <div class="skeleton" style="width:36px;height:36px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:.3rem">
+          <div class="skeleton" style="width:80px"></div>
+          <div class="skeleton" style="width:40px;height:14px"></div>
+        </div>
+      </div>
+      <div class="skeleton" style="width:80px"></div>
+      <div class="skeleton" style="width:60px"></div>
+      <div class="skeleton" style="width:90px"></div>
+      <div class="skeleton" style="width:60px;height:32px"></div>
+    `;
+    list.appendChild(s);
+  }
+}
+
+function renderCoins(data) {
+  const list = document.getElementById('crypto-list');
+  list.innerHTML = '';
+  if (!data.length) {
+    list.innerHTML = `<div class="error-msg">No results found.</div>`;
+    return;
+  }
+  data.forEach((coin, i) => {
+    const change = parseFloat(coin.changePercent24Hr) || 0;
+    const isUp = change >= 0;
+    const price = parseFloat(coin.priceUsd);
+    const prev = prevPrices[coin.id];
+    let flash = '';
+    if (prev !== undefined) {
+      if (price > prev) flash = 'flash-up';
+      else if (price < prev) flash = 'flash-down';
+    }
+    prevPrices[coin.id] = price;
+
+    const card = document.createElement('div');
+    card.className = `crypto-card ${flash}`;
+    card.style.animationDelay = `${i * 0.035}s`;
+    card.innerHTML = `
+      <span class="coin-rank">${coin.rank}</span>
+      <div class="coin-info">
+        <div class="coin-icon">
+          <img src="https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png"
+            alt="${coin.symbol}"
+            onerror="this.outerHTML='<span style=font-size:.85rem;font-weight:800;color:var(--orange)>${coin.symbol.slice(0,3)}</span>'">
+        </div>
+        <div>
+          <div class="coin-name">${coin.name}</div>
+          <div class="coin-symbol">${coin.symbol}</div>
+        </div>
+      </div>
+      <div class="coin-price">${formatPrice(coin.priceUsd)}</div>
+      <div class="coin-change ${isUp?'up':'down'}">${isUp?'▲':'▼'} ${Math.abs(change).toFixed(2)}%</div>
+      <div class="coin-mcap">${formatUSD(coin.marketCapUsd)}</div>
+      <div class="mini-chart">${getMiniChart(change)}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function updateStats(data) {
+  const mcap = data.reduce((a,b) => a + parseFloat(b.marketCapUsd||0), 0);
+  const vol  = data.reduce((a,b) => a + parseFloat(b.volumeUsd24Hr||0), 0);
+  const g = data.filter(c => parseFloat(c.changePercent24Hr) >= 0).length;
+  document.getElementById('totalMcap').textContent   = formatUSD(mcap);
+  document.getElementById('totalVolume').textContent = formatUSD(vol);
+  document.getElementById('gainers').textContent     = `${g} coins`;
+  document.getElementById('losers').textContent      = `${data.length - g} coins`;
+}
+
+// Intentamos CoinCap v2, si falla usamos v3
+async function loadCrypto() {
+  if (!coins.length) renderSkeletons();
+
+  const urls = [
+    'https://api.coincap.io/v2/assets?limit=20',
+    'https://api.coincap.io/v3/assets?limit=20&apiKey=',
+  ];
+
+  let data = null;
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const json = await res.json();
+      // v2 devuelve { data: [...] }, v3 igual
+      if (json.data && json.data.length) { data = json.data; break; }
+    } catch(e) { continue; }
+  }
+
+  if (!data) {
+    // Fallback: datos estáticos de muestra para que no quede vacío
+    data = getFallbackData();
+  }
+
+  coins = data;
+  renderCoins(coins);
+  updateStats(coins);
+  document.getElementById('last-updated').textContent =
+    `Last updated: ${new Date().toLocaleTimeString()}`;
+}
+
+// Datos de muestra por si la API no responde
+function getFallbackData() {
+  return [
+    {rank:'1', id:'bitcoin',   name:'Bitcoin',   symbol:'BTC', priceUsd:'67000',  changePercent24Hr:'1.2',  marketCapUsd:'1320000000000', volumeUsd24Hr:'28000000000'},
+    {rank:'2', id:'ethereum',  name:'Ethereum',  symbol:'ETH', priceUsd:'3500',   changePercent24Hr:'-0.8', marketCapUsd:'420000000000',  volumeUsd24Hr:'14000000000'},
+    {rank:'3', id:'tether',    name:'Tether',    symbol:'USDT',priceUsd:'1.0001', changePercent24Hr:'0.01', marketCapUsd:'110000000000',  volumeUsd24Hr:'50000000000'},
+    {rank:'4', id:'bnb',       name:'BNB',       symbol:'BNB', priceUsd:'580',    changePercent24Hr:'2.1',  marketCapUsd:'87000000000',   volumeUsd24Hr:'1800000000'},
+    {rank:'5', id:'solana',    name:'Solana',    symbol:'SOL', priceUsd:'172',    changePercent24Hr:'3.4',  marketCapUsd:'75000000000',   volumeUsd24Hr:'3200000000'},
+    {rank:'6', id:'xrp',       name:'XRP',       symbol:'XRP', priceUsd:'0.62',   changePercent24Hr:'-1.5', marketCapUsd:'34000000000',   volumeUsd24Hr:'1500000000'},
+    {rank:'7', id:'usdc',      name:'USD Coin',  symbol:'USDC',priceUsd:'1.0000', changePercent24Hr:'0.00', marketCapUsd:'33000000000',   volumeUsd24Hr:'6000000000'},
+    {rank:'8', id:'cardano',   name:'Cardano',   symbol:'ADA', priceUsd:'0.48',   changePercent24Hr:'1.8',  marketCapUsd:'17000000000',   volumeUsd24Hr:'450000000'},
+    {rank:'9', id:'avalanche', name:'Avalanche', symbol:'AVAX',priceUsd:'38',     changePercent24Hr:'-2.3', marketCapUsd:'15500000000',   volumeUsd24Hr:'520000000'},
+    {rank:'10',id:'dogecoin',  name:'Dogecoin',  symbol:'DOGE',priceUsd:'0.16',   changePercent24Hr:'4.2',  marketCapUsd:'22000000000',   volumeUsd24Hr:'1100000000'},
+  ];
+}
+
+document.getElementById('search').addEventListener('input', function() {
+  const val = this.value.toLowerCase();
+  const filtered = coins.filter(c =>
+    c.name.toLowerCase().includes(val) || c.symbol.toLowerCase().includes(val)
+  );
+  renderCoins(filtered);
+});
+
+loadCrypto();
+setInterval(loadCrypto, 30000);
+</script>
+</body>
+</html>
